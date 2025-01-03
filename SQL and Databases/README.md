@@ -1,5 +1,4 @@
 
-```markdown
 ## Task: SQL and Databases
 
 In this graded task, you will be asked to create queries to solve specific business questions. 
