@@ -1,1 +1,303 @@
+-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+-- 1 TASK 
 
+-- 1.1 You’ve been asked to extract the data on products from the Product table where there exists a product subcategory. And also include the name of the ProductSubcategory.
+-- Columns needed: ProductId, Name, ProductNumber, size, color, ProductSubcategoryId, Subcategory name.
+-- Order results by SubCategory name.
+-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+SELECT
+  p.ProductID,
+  p.name,
+  p.ProductNumber,
+  p.Size,
+  p.Color,
+  p_sub.ProductSubCategoryID,
+  p_sub.Name as SubCategory_name
+FROM 
+  `adwentureworks_db.product` as p
+JOIN 
+  `adwentureworks_db.productsubcategory` as p_sub
+ON
+  p.ProductSubCategoryID = p_sub.ProductSubcategoryID
+ORDER BY
+  p_sub.Name IS NULL, p_sub.Name; 
+
+--ORDER BY clause first orders by whether the column is NULL (column_name IS NULL), 
+--which will place the rows with null values at the end, and then it orders by the actual column value (column_name).
+
+  -- SELECT *
+  -- FROM `adwentureworks_db.productsubcategory`
+  -- Order by ProductCategoryID;
+
+
+-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+-- 1.2 In 1.1 query you have a product subcategory but see that you could use the category name.
+
+-- Find and add the product category name.
+-- Afterwards order the results by Category name.
+-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+SELECT
+  p.ProductID,
+  p.name,
+  p.ProductNumber,
+  p.Size,
+  p.Color,
+  p_sub.ProductSubCategoryID,
+  p_sub.Name as SubCategory_name,
+  p_cat.name as Category
+FROM 
+  `adwentureworks_db.product` as p
+JOIN 
+  `adwentureworks_db.productsubcategory` as p_sub
+ON
+  p.ProductSubCategoryID = p_sub.ProductSubcategoryID
+JOIN
+  `adwentureworks_db.productcategory` as p_cat
+ON
+  p_cat.ProductCategoryID = p_sub.ProductCategoryID
+ORDER BY
+  p_cat.name IS NULL, p_cat.name;
+
+-- SELECT *
+-- FROM `adwentureworks_db.productcategory`;
+
+
+-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+-- 1.3 Use the established query to select the most expensive (price listed over 2000) bikes that are still actively sold (does not have a sales end date)
+
+-- Order the results from most to least expensive bike.
+-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+SELECT
+  p.ProductID,
+  p.name,
+  p.ProductNumber,
+  p.Size,
+  p.Color,
+  p_sub.ProductSubCategoryID,
+  p_sub.Name as SubCategory_name,
+  p_cat.name as Category,
+  price.ListPrice as Listed_price,
+  -- price.EndDate
+FROM 
+  `adwentureworks_db.product` as p
+JOIN 
+  `adwentureworks_db.productsubcategory` as p_sub
+ON
+  p.ProductSubCategoryID = p_sub.ProductSubcategoryID
+JOIN
+  `adwentureworks_db.productcategory` as p_cat
+ON
+  p_cat.ProductCategoryID = p_sub.ProductCategoryID
+JOIN
+  `adwentureworks_db.productlistpricehistory` as price
+ON
+  price.ProductID = p.ProductID
+WHERE
+  price.ListPrice > 2000
+  AND
+  price.EndDate IS NULL
+  AND
+  p_cat.Name = 'Bikes'
+ORDER BY
+  price.ListPrice DESC;
+
+
+-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+-- 2 TASK 
+
+-- 2.1 Create an aggregated query to select the:
+
+-- Number of unique work orders.
+-- Number of unique products.
+-- Total actual cost.
+-- For each location Id from the 'workoderrouting' table for orders in January 2004.
+-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+SELECT
+  LocationID,
+  count(DISTINCT WorkOrderID) AS no_work_orders,  
+  count(DISTINCT ProductID) as no_unique_products,
+  sum(ActualCost) as actual_cost
+FROM
+  `adwentureworks_db.workorderrouting`
+WHERE
+  ActualStartDate BETWEEN '2004-01-01' AND '2004-01-31'
+GROUP BY 
+  LocationID;
+
+
+-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+-- 2.2 Update your 2.1 query by adding the name of the location and also add the average days 
+-- amount between actual start date and actual end date per each location.
+
+-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+SELECT
+  routing.LocationID,
+  location.Name as location_name,
+  count(DISTINCT routing.WorkOrderID) as no_work_orders,  
+  count(DISTINCT routing.ProductID) as no_unique_products,
+  sum(routing.ActualCost) as actual_cost,
+  ROUND(avg(DATE_DIFF(routing.ActualEndDate, routing.ActualStartDate, DAY)),2) as avg_days_diff
+FROM
+  `adwentureworks_db.workorderrouting` as routing
+JOIN 
+  `adwentureworks_db.location` as location
+ON 
+  location.LocationID = routing.LocationID
+WHERE
+  routing.ActualStartDate BETWEEN '2004-01-01' AND '2004-01-31'
+GROUP BY 
+  routing.LocationID, location.Name;
+
+
+-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+-- 2.3 Select all the expensive work Orders (above 300 actual cost) that happened throught January 2004.
+
+-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+SELECT
+  WorkOrderID,
+  SUM(ActualCost) as actual_cost
+FROM
+  `adwentureworks_db.workorderrouting`
+WHERE
+  ActualStartDate BETWEEN '2004-01-01' AND '2004-01-31'
+GROUP BY
+  WorkOrderID
+HAVING
+  SUM(ActualCost) > 300;
+
+
+-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+-- 3. Query validation Below you will find 2 queries that need to be fixed/updated.
+
+
+-- 3.1 Your colleague has written a query to find the list of orders connected to special offers. The query works fine but the numbers are off, investigate where the potential issue lies.
+
+-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+-- primary code
+
+-- SELECT sales_detail.SalesOrderId
+--       ,sales_detail.OrderQty
+--       ,sales_detail.UnitPrice
+--       ,sales_detail.LineTotal
+--       ,sales_detail.ProductId
+--       ,sales_detail.SpecialOfferID
+--       ,spec_offer_product.ModifiedDate
+--       ,spec_offer.Category
+--       ,spec_offer.Description
+
+-- FROM `tc-da-1.adwentureworks_db.salesorderdetail`  as sales_detail
+
+-- left join `tc-da-1.adwentureworks_db.specialofferproduct` as spec_offer_product
+-- on sales_detail.productId = spec_offer_product.ProductID
+
+-- left join `tc-da-1.adwentureworks_db.specialoffer` as spec_offer
+-- on sales_detail.SpecialOfferID = spec_offer.SpecialOfferID
+
+-- order by LineTotal desc
+
+SELECT sales_detail.SalesOrderId
+      ,sales_detail.OrderQty
+      ,sales_detail.UnitPrice
+      ,sales_detail.LineTotal
+      ,sales_detail.ProductId
+      ,sales_detail.SpecialOfferID
+      ,spec_offer_product.ModifiedDate
+      ,spec_offer.Category
+      ,spec_offer.Description
+
+FROM `tc-da-1.adwentureworks_db.salesorderdetail`  as sales_detail
+
+left join `tc-da-1.adwentureworks_db.specialofferproduct` as spec_offer_product
+on sales_detail.productId = spec_offer_product.ProductID 
+and sales_detail.SpecialOfferID = spec_offer_product.SpecialOfferID
+
+left join `tc-da-1.adwentureworks_db.specialoffer` as spec_offer
+on sales_detail.SpecialOfferID = spec_offer.SpecialOfferID
+
+order by LineTotal desc
+
+-- LIMIT 1000;
+--just for export purposes
+
+
+-- Can you join on u1?
+-- left join `tc-da-1.adwentureworks_db.specialofferproduct` as spec_offer_product
+-- on sales_detail.rowguid = spec_offer_product.rowguid
+
+
+-- SELECT *
+-- FROM `adwentureworks_db.salesorderdetail`;
+
+-- SELECT *
+-- FROM `adwentureworks_db.specialofferproduct`;
+
+-- SELECT *
+-- FROM `adwentureworks_db.specialoffer`;
+
+
+
+-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+-- 3.2 Your colleague has written this query to collect basic Vendor information. The query does not work, 
+-- look into the query and find ways to fix it. Can you provide any feedback on how to make this query be easier to debug/read?
+
+-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+SELECT 
+  vendor.VendorId as Id,
+  vendor_contact.ContactId, 
+  contact.LastName as contact_last_name,
+  vendor_contact.ContactTypeId, 
+  vendor.Name, 
+  vendor.CreditRating,
+  vendor.ActiveFlag, 
+  vendor_address.AddressId,
+  address.City
+
+FROM `adwentureworks_db.vendor` as vendor
+
+left join `adwentureworks_db.vendorcontact` as vendor_contact
+on vendor.VendorId = vendor_contact.VendorId 
+
+left join `adwentureworks_db.vendoraddress` as vendor_address
+on vendor.VendorId = vendor_address.VendorId
+
+left join `adwentureworks_db.address` as address 
+on vendor_address.AddressID = address.AddressID
+
+left join `adwentureworks_db.contact` as contact
+on contact.ContactId = vendor_contact.ContactID
+
+ORDER BY
+  vendor.VendorID;
+
+
+-- SELECT
+--   *
+-- FROM
+--   `adwentureworks_db.vendor` --104 values
+-- ORDER BY
+--   VendorID;
+
+-- SELECT *
+-- FROM `adwentureworks_db.vendorcontact`
+-- ORDER BY
+--   VendorID;
